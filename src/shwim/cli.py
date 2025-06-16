@@ -88,7 +88,7 @@ class TtyShare(Protocol):
 
     def processEnded(self, why):
         termios.tcsetattr(0, termios.TCSADRAIN, self._origstate)
-        if isinstance(why, ProcessDone):
+        if isinstance(why.value, ProcessDone):
             why = None
         self._done.trigger(self._reactor, why)
 
