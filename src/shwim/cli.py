@@ -10,6 +10,7 @@ from twisted.internet.defer import ensureDeferred, Deferred
 from twisted.internet.task import react, deferLater
 from twisted.internet.protocol import Protocol
 from twisted.internet.stdio import StandardIO
+from twisted.internet.error import ProcessDone
 
 
 @click.command()
@@ -50,9 +51,12 @@ async def _guest(reactor, mailbox, code):
     print(f"peer connected: {channel}")
     port = channel.connect_port
 
-    await deferLater(reactor, 2.5, lambda: None) 
+    for x in range(4):
+        await deferLater(reactor, 1.0, lambda: None) 
+        print(".")
 
-    await launch_tty_share(reactor, f"http://localhost:{port}/s/local")
+    await launch_tty_share(reactor, f"http://localhost:{port}/s/local/")
+    await Deferred()
 
 
 class TtyShare(Protocol):
@@ -84,8 +88,9 @@ class TtyShare(Protocol):
 
     def processEnded(self, why):
         termios.tcsetattr(0, termios.TCSADRAIN, self._origstate)
+        if isinstance(why, ProcessDone):
+            why = None
         self._done.trigger(self._reactor, why)
-        print("ended", why)
 
 
 class WriteTo(Protocol):
