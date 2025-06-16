@@ -6,6 +6,7 @@ import click
 import wormhole
 from fowl.api import create_coop
 from fowl.observer import When
+from fowl.tcp import allocate_tcp_port
 from twisted.internet.defer import ensureDeferred, Deferred
 from twisted.internet.task import react, deferLater
 from twisted.internet.protocol import Protocol

@@ -1,9 +1,9 @@
 SHwiM
 =====
 
-``SHell With Me`` lets a "host" share their terminal with a guest peer on another computer.
+``SHell WIth Me`` lets a "host" share their terminal with a "guest" peer on another computer.
 
-This combines the cryptography of Magic Wormhole and the terminal-sharing of [tty-share](https://tty-share.com/) into a secure, peer-to-peer terminal sharing application.
+This combines the cryptography of Magic Wormhole and the terminal-sharing of [tty-share](https://tty-share.com/) into a secure, end-to-end encrypted, **peer-to-peer terminal sharing application**.
 
 
 Getting Started
@@ -15,7 +15,17 @@ This should enable you to run ``shwim --help``.
 The *Host* computer runs ``shwim`` by itself, producing a ``<magic-code>``.
 The *Guest* computer runs ``shwim <magic-code>``.
 
+You are now sharing a single terminal running on "host".
+**Beware**: the guest can type, run commands, etc. so only do this with humans you would hand your local keyboard over to.
 
-Both sides 
 
-Once these two things happens, there is a secure tunnel between both computers: one is running a ``tty-share`` server and the other is
+Slightly Longer Explanation
+---------------------------
+
+Once thetwo things happen (i.e. "shwim" on the host and "shwim <magic-code>" on the guest), there is a secure tunnel between both computers.
+The host will decide a random port and run ``tty-share`` as a server; the guest will run ``tty-share`` as a client.
+
+On both computers, ``tty-share`` will be running as a subprocess with correct options to do networking via Magic Wormhole only.
+All raw-mode terminal I/O is forwarded to this ``tty-share`` process so things like curses etc work as expected.
+
+Once either side exits, the networking forwarding is done -- there is no long-term credential sharing or any other network set preserved or altered on the "host" nor "guest" computers.
