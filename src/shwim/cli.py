@@ -7,7 +7,7 @@ import wormhole
 from fowl.api import create_coop
 from fowl.observer import When
 from twisted.internet.defer import ensureDeferred, Deferred
-from twisted.internet.task import react
+from twisted.internet.task import react, deferLater
 from twisted.internet.protocol import Protocol
 from twisted.internet.stdio import StandardIO
 
@@ -49,6 +49,8 @@ async def _guest(reactor, mailbox, code):
     channel = await coop.when_roosted("tty-share")
     print(f"peer connected: {channel}")
     port = channel.connect_port
+
+    await deferLater(reactor, 2.5, lambda: None) 
 
     await launch_tty_share(reactor, f"http://localhost:{port}/s/local")
 
@@ -103,6 +105,7 @@ class WriteTo(Protocol):
 
 async def launch_tty_share(reactor, *args):
     proto = TtyShare(reactor)
+    print(f"RUN: {args}")
     proc = reactor.spawnProcess(
         proto,
         '/usr/bin/tty-share',
