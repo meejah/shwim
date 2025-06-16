@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore"
+]
+
+[project]
+name = "shwim"
+dynamic = ["version"]
+description = "Encrypted, peer-to-peer terminal sharing for two people."
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    { name = "meejah", email = "meejah@meejah.ca" },
+]
+requires-python = ">=3.10"
+keywords = [
+    "magic-wormhole",
+    "fowl",
+]
+classifiers = [
+    "Framework :: Twisted",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "magic-wormhole @ git+https://github.com/magic-wormhole/magic-wormhole.git#egg=magic-wormhole",
+    "fowl @ git+https://github.com/meejah/fowl.git#egg=fowl",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+dev = [
+    "twine",
+    "sphinx",
+    "dulwich",
+    "gpg",  # should use isis lovecruft's version?
+    "pip-tools",
+    "hatch",
+    "readme-renderer",
+    "cuvner",
+]
+
+[project.scripts]
+shwim = "shwim.cli:shwim"
+
+[tool.hatch.version]
+path = "src/shwim/__init__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/shwim",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src",
+    "README.md",
+    "pyproject.toml",
+]
+exclude = [
+    "*~",
+    "*.egg-info*",
+]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+source_pkgs = ["shwim"]
