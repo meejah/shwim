@@ -37,7 +37,7 @@ class WebSocketClientDemo:
 
 async def main(reactor: Any) -> None:
     endpoint = WebSocketClientEndpoint.new(
-        reactor, "ws://localhost:8000/s/ws"
+        reactor, "ws://localhost:8000/s/local/ws"
     )
     print("connecting...")
     await endpoint.connect(WebSocketClientDemo)
