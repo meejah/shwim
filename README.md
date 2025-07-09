@@ -1,6 +1,8 @@
 SHwiM
 =====
 
+(from Shae: needs a cockatrice-style logo with a fish with the chicken-logo head)
+
 ``SHell WIth Me`` lets a "host" share their terminal with a "guest" peer on another computer.
 
 This combines the cryptography of Magic Wormhole and the terminal-sharing of [tty-share](https://tty-share.com/) into a secure, end-to-end encrypted, **peer-to-peer terminal sharing application**.
