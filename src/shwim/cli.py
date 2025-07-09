@@ -6,7 +6,6 @@ import click
 import wormhole
 from fowl.api import create_coop
 from fowl._proto import create_fowl
-from fowl.status import _StatusTracker
 from fowl.observer import When
 from fowl.tcp import allocate_tcp_port
 from twisted.internet.defer import ensureDeferred, Deferred
@@ -46,8 +45,7 @@ def shwim(code, mailbox, read_only):
 
 async def _guest(reactor, mailbox, code):
     wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
-    status = _StatusTracker()  # FIXME, we shouldn't have to fix this?
-    coop = create_coop(reactor, wh, status)
+    coop = create_coop(reactor, wh)
 
     wh.set_code(code)
     c = await wh.get_code()
@@ -142,8 +140,7 @@ async def launch_tty_share(reactor, *args):
 
 async def _host(reactor, mailbox, read_only):
     wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
-    status = _StatusTracker()  # FIXME, we shouldn't have to fix this?
-    coop = create_coop(reactor, wh, status)
+    coop = create_coop(reactor, wh)
     wh.allocate_code()
     code = await wh.get_code()
     print(f"magic code: {code}")
