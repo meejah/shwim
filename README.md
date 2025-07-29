@@ -1,4 +1,4 @@
-SHwiM
+ShWiM
 =====
 
 (from Shae: needs a cockatrice-style logo with a fish with the chicken-logo head)
