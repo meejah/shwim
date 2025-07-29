@@ -7,6 +7,7 @@ import array
 import termios
 import click
 import signal
+import shutil
 import wormhole
 from wormhole.cli import public_relay
 from fowl.api import create_coop
@@ -56,7 +57,7 @@ async def _guest(reactor, mailbox, code):
     c = await wh.get_code()
     print("code", c)
 
-    dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT)
+    dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
     print("dilated")
 
     x = coop.roost("tty-share")
@@ -89,9 +90,6 @@ class TtyShare(Protocol):
     def _sync_terminal_size(self):
         # we should also sync terminal size on SIGWINCH I believe?
         size = termios.tcgetwinsize(0)
-        print(self.transport)
-        print(dir(self.transport))
-        print(self.transport.fileno())
         termios.tcsetwinsize(self.transport.fileno(), size)
 
     def childDataReceived(self, fd, data):
@@ -132,13 +130,14 @@ async def launch_tty_share(reactor, *args):
     print(f"RUN: {args}")
     proc = reactor.spawnProcess(
         proto,
-        '/usr/bin/tty-share',
+        shutil.which("tty-share"),
         args=('tty-share',) + args,
         env=os.environ,
         usePTY=True,
     )
 
     # respond to re-sizes more-or-less properly?
+    # XXX use _sync_terminal_size
     def forward_winch(sig, frame):
         print("forward winch")
         b = array.array('h', [0, 0, 0, 0])
