@@ -3,6 +3,7 @@ import sys
 import tty
 import termios
 import click
+import signal
 import wormhole
 from fowl.api import create_coop
 from fowl._proto import create_fowl
@@ -123,6 +124,16 @@ class WriteTo(Protocol):
         pass
 
 
+winchers = []
+
+def forward_winch(sig, frame):
+    for proc in winchers:
+        proc.signalProcess(signal.SIGWINCH)
+
+
+signal.signal(signal.SIGWINCH, forward_winch)
+
+
 async def launch_tty_share(reactor, *args):
     proto = TtyShare(reactor)
     print(f"RUN: {args}")
@@ -133,6 +144,7 @@ async def launch_tty_share(reactor, *args):
         env=os.environ,
         usePTY=True,
     )
+    winchers.append(proc)
     std = StandardIO(WriteTo(proto))
     proto.std = std
     await proto.when_done()
