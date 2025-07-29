@@ -61,7 +61,6 @@ async def _guest(reactor, mailbox, code):
     print(f"peer connected: {channel}")
     port = channel.connect_port
 
-
     await launch_tty_share(reactor, f"http://localhost:{port}/s/local/")
     await Deferred()
 
@@ -137,6 +136,7 @@ async def launch_tty_share(reactor, *args):
 
     # respond to re-sizes more-or-less properly?
     def forward_winch(sig, frame):
+        print("forward winch")
         proc.signalProcess(signal.SIGWINCH)
     signal.signal(signal.SIGWINCH, forward_winch)
 
