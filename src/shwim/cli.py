@@ -137,7 +137,10 @@ async def launch_tty_share(reactor, *args):
     # respond to re-sizes more-or-less properly?
     def forward_winch(sig, frame):
         print("forward winch")
-        proc.signalProcess(signal.SIGWINCH)
+        b = array.array('h', [0, 0, 0, 0])
+        fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, b, True)
+        fcntl.ioctl(proc.fd, termios.TIOCSWINSZ, b)
+        ##proc.signalProcess(signal.SIGWINCH)
     signal.signal(signal.SIGWINCH, forward_winch)
 
     std = StandardIO(WriteTo(proto))
