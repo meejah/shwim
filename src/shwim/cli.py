@@ -124,16 +124,6 @@ class WriteTo(Protocol):
         pass
 
 
-winchers = []
-
-def forward_winch(sig, frame):
-    for proc in winchers:
-        proc.signalProcess(signal.SIGWINCH)
-
-
-signal.signal(signal.SIGWINCH, forward_winch)
-
-
 async def launch_tty_share(reactor, *args):
     proto = TtyShare(reactor)
     print(f"RUN: {args}")
@@ -144,7 +134,12 @@ async def launch_tty_share(reactor, *args):
         env=os.environ,
         usePTY=True,
     )
-    winchers.append(proc)
+
+    # respond to re-sizes more-or-less properly?
+    def forward_winch(sig, frame):
+        proc.signalProcess(signal.SIGWINCH)
+    signal.signal(signal.SIGWINCH, forward_winch)
+
     std = StandardIO(WriteTo(proto))
     proto.std = std
     await proto.when_done()
@@ -159,6 +154,9 @@ async def _host(reactor, mailbox, read_only):
 
     dilated = await coop.dilate()
     print("host: dilated")
+
+    # XXX need to forward on the "resize" signal to our child, so that
+    # if we're too big etc those messages get through
 
     # we're running the server -- we want a random port, but also we
     # _NEED_ to have the same port in use on the far side, for boring
