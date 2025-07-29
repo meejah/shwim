@@ -155,7 +155,7 @@ async def _host(reactor, mailbox, read_only):
     random_port = 8001###allocate_tcp_port()
     # race between here, and when we acutally listen...
     print("host: fledging")
-    channel = await coop.fledge("tty-share", random_port)#, random_port)
+    channel = await coop.fledge("tty-share", random_port, random_port)
     print(f"running tty-share on: {channel.listen_port}")
 
     if 0:
