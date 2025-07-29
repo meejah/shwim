@@ -1,6 +1,9 @@
 import os
 import sys
 import tty
+import pty
+import fcntl
+import array
 import termios
 import click
 import signal
