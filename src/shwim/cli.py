@@ -8,6 +8,7 @@ import termios
 import click
 import signal
 import wormhole
+from wormhole.cli import public_relay
 from fowl.api import create_coop
 from fowl._proto import create_fowl
 from fowl.observer import When
@@ -55,7 +56,7 @@ async def _guest(reactor, mailbox, code):
     c = await wh.get_code()
     print("code", c)
 
-    dilated = await coop.dilate()
+    dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT)
     print("dilated")
 
     x = coop.roost("tty-share")
