@@ -1,14 +1,19 @@
-SHwiM
+ShWiM
 =====
 
 ``SHell WIth Me`` lets a “host” share their terminal with a “guest” peer
 on another computer.
 
-This combines the cryptography of Magic Wormhole and the
-terminal-sharing of `tty-share <https://tty-share.com/>`__ into a
+This combines the cryptography of `Magic Wormhole <http://magic-wormhole.io>`_ and the
+terminal-sharing of `tty-share <https://tty-share.com/>`_ into a
 secure, end-to-end encrypted, **peer-to-peer terminal sharing
 application**.
 
+.. image:: media/logo-shell-600.png
+    :height: 692px
+    :width: 600px
+    :alt: the ShWiM logo, the chicken head from Fowl's logo peeking out of a conch-looking shell
+    :align: right
 
 
 Getting Started
@@ -23,6 +28,7 @@ The *Host* computer runs ``shwim`` by itself, producing a
 You are now sharing a single terminal running on “host”. **Beware**: the
 guest can type, run commands, etc. so only do this with humans you would
 hand your local keyboard over to.
+
 
 Slightly Longer Explanation
 ---------------------------
