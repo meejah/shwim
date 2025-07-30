@@ -1,6 +1,12 @@
 ShWiM
 =====
 
+.. image:: media/logo-shell-256.png
+    :height: 295px
+    :width: 256px
+    :alt: the ShWiM logo, the chicken head from Fowl's logo peeking out of a conch-looking shell
+    :align: right
+
 ``SHell WIth Me`` lets a “host” share their terminal with a “guest” peer
 on another computer.
 
@@ -8,12 +14,6 @@ This combines the cryptography of `Magic Wormhole <http://magic-wormhole.io>`_ a
 terminal-sharing of `tty-share <https://tty-share.com/>`_ into a
 secure, end-to-end encrypted, **peer-to-peer terminal sharing
 application**.
-
-.. image:: media/logo-shell-256.png
-    :height: 295px
-    :width: 256px
-    :alt: the ShWiM logo, the chicken head from Fowl's logo peeking out of a conch-looking shell
-    :align: right
 
 
 Getting Started
