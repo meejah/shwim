@@ -10,6 +10,7 @@ secure, end-to-end encrypted, **peer-to-peer terminal sharing
 application**.
 
 .. image:: media/logo-shell-256.png
+    :width: 256px
     :align: right
     :alt: the ShWiM logo, the chicken head from Fowl's logo peeking out of a conch-looking shell
 
