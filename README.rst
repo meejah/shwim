@@ -4,6 +4,7 @@ ShWiM
 .. image:: media/logo-shell-256.png
     :height: 295px
     :width: 256px
+    :scale: 50%
     :alt: the ShWiM logo, the chicken head from Fowl's logo peeking out of a conch-looking shell
     :align: right
 
