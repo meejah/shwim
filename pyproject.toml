@@ -11,7 +11,7 @@ filterwarnings = [
 name = "shwim"
 dynamic = ["version"]
 description = "Encrypted, peer-to-peer terminal sharing for two people."
-readme = "README.md"
+readme = "README.rst"
 license = {file = "LICENSE"}
 authors = [
     { name = "meejah", email = "meejah@meejah.ca" },
@@ -27,8 +27,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "magic-wormhole @ git+https://github.com/magic-wormhole/magic-wormhole.git#egg=magic-wormhole",
-    "fowl @ git+https://github.com/meejah/fowl.git#egg=fowl",
+    "magic-wormhole",
+    "fowl",
 ]
 
 [project.optional-dependencies]
