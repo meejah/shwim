@@ -9,9 +9,9 @@ terminal-sharing of `tty-share <https://tty-share.com/>`_ into a
 secure, end-to-end encrypted, **peer-to-peer terminal sharing
 application**.
 
-.. image:: media/logo-shell-600.png
-    :height: 692px
-    :width: 600px
+.. image:: media/logo-shell-256.png
+    :height: 295px
+    :width: 256px
     :alt: the ShWiM logo, the chicken head from Fowl's logo peeking out of a conch-looking shell
     :align: right
 
