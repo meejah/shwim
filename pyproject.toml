@@ -27,8 +27,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "magic-wormhole @ git+https://github.com/magic-wormhole/magic-wormhole.git#egg=magic-wormhole",
-    "fowl @ git+https://github.com/meejah/fowl.git#egg=fowl",
+    "magic-wormhole >= 0.20.0",
+    "fowl >= 25.7.0",
 ]
 
 [project.optional-dependencies]
