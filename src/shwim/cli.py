@@ -7,7 +7,9 @@ import array
 import termios
 import click
 import signal
+import shutil
 import wormhole
+from wormhole.cli import public_relay
 from fowl.api import create_coop
 from fowl._proto import create_fowl
 from fowl.observer import When
@@ -36,6 +38,11 @@ from twisted.internet.error import ProcessDone
 @click.argument("code", default=None, required=False)
 def shwim(code, mailbox, read_only):
     """
+    SHell WIth Me allows you to share you shell with another computer.
+
+    This uses the great tty-share under the hood, except that it never
+    uses tty-share's public server -- all communications are
+    end-to-end encrypted over Magic Wormhole.
     """
     if code is None:
         react(
@@ -48,20 +55,21 @@ def shwim(code, mailbox, read_only):
 
 
 async def _guest(reactor, mailbox, code):
+    """
+    Share another person's terminal via tty-share
+    """
     wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
     coop = create_coop(reactor, wh)
 
     wh.set_code(code)
     c = await wh.get_code()
-    print("code", c)
 
-    dilated = await coop.dilate()
-    print("dilated")
+    print("Connecting to peer")
+    dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
+    print("...connected, launching tty-share")
 
     x = coop.roost("tty-share")
-    print("roosted", x)
     channel = await coop.when_roosted("tty-share")
-    print(f"peer connected: {channel}")
     port = channel.connect_port
 
     await launch_tty_share(reactor, f"http://localhost:{port}/s/local/")
@@ -69,6 +77,12 @@ async def _guest(reactor, mailbox, code):
 
 
 class TtyShare(Protocol):
+    """
+    Speak stdin/stdout to a tty-share
+
+    This also handles synchronizing terminal sizes between our
+    controlling terminal and the tty-share subprocess via SIGWINCH
+    """
 
     def __init__(self, reactor):
         self._reactor = reactor
@@ -78,7 +92,6 @@ class TtyShare(Protocol):
         return self._done.when_triggered()
 
     def connectionMade(self):
-        print("connected")
         self.transport.write(b"\n")
         # we need to make some terminal Raw somewhere, how about here?
         self._origstate = termios.tcgetattr(0)
@@ -88,9 +101,6 @@ class TtyShare(Protocol):
     def _sync_terminal_size(self):
         # we should also sync terminal size on SIGWINCH I believe?
         size = termios.tcgetwinsize(0)
-        print(self.transport)
-        print(dir(self.transport))
-        print(self.transport.fileno())
         termios.tcsetwinsize(self.transport.fileno(), size)
 
     def childDataReceived(self, fd, data):
@@ -112,6 +122,9 @@ class TtyShare(Protocol):
 
 
 class WriteTo(Protocol):
+    """
+    Write any incoming data to the attached tty-share
+    """
 
     def __init__(self, ttyshare):
         self._ttyshare = ttyshare
@@ -127,23 +140,28 @@ class WriteTo(Protocol):
 
 
 async def launch_tty_share(reactor, *args):
+    """
+    run a tty-share subprocess
+    """
     proto = TtyShare(reactor)
-    print(f"RUN: {args}")
+    # print(f"RUN: {args}")
     proc = reactor.spawnProcess(
         proto,
-        '/usr/bin/tty-share',
+        shutil.which("tty-share"),
         args=('tty-share',) + args,
         env=os.environ,
         usePTY=True,
     )
 
     # respond to re-sizes more-or-less properly?
+    # XXX use _sync_terminal_size
     def forward_winch(sig, frame):
-        print("forward winch")
-        b = array.array('h', [0, 0, 0, 0])
-        fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, b, True)
-        fcntl.ioctl(proc.fd, termios.TIOCSWINSZ, b)
-        ##proc.signalProcess(signal.SIGWINCH)
+        proto._sync_terminal_size()
+        # print("forward winch")
+        # b = array.array('h', [0, 0, 0, 0])
+        # fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, b, True)
+        # fcntl.ioctl(proc.fd, termios.TIOCSWINSZ, b)
+        # ##proc.signalProcess(signal.SIGWINCH)
     signal.signal(signal.SIGWINCH, forward_winch)
 
     std = StandardIO(WriteTo(proto))
@@ -152,6 +170,15 @@ async def launch_tty_share(reactor, *args):
 
 
 async def _host(reactor, mailbox, read_only):
+    """
+    Run the host side interaction, launching a tty-share
+    subprocess and basically turning over 'this' terminal to it.
+    """
+    print(f"Preparing to share this terminal with a peer")
+    if not read_only:
+        print(f"Remember: they can type any command!")
+        print(f"(So share this code with a person you trust with your keyboard)")
+    print()
     wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
     coop = create_coop(reactor, wh)
     wh.allocate_code()
