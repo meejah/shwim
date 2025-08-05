@@ -56,7 +56,7 @@ def shwim(code, mailbox, read_only):
 
 async def _guest(reactor, mailbox, code):
     """
-    Share another person's terminal via tty-share
+    Join another person's terminal via tty-share
     """
     wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
     coop = create_coop(reactor, wh)
