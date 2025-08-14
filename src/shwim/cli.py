@@ -20,6 +20,8 @@ from twisted.internet.protocol import Protocol
 from twisted.internet.stdio import StandardIO
 from twisted.internet.error import ProcessDone
 
+from .status import WormholeStatus
+
 
 @click.command()
 @click.option(
@@ -72,8 +74,7 @@ async def _guest(reactor, mailbox, code):
     channel = await coop.when_roosted("tty-share")
     port = channel.connect_port
 
-    await launch_tty_share(reactor, f"http://localhost:{port}/s/local/")
-    await Deferred()
+    await launch_tty_share(reactor, f"http://127.0.0.1:{port}/s/local/")
 
 
 class TtyShare(Protocol):
@@ -153,19 +154,15 @@ async def launch_tty_share(reactor, *args):
         usePTY=True,
     )
 
+
     # respond to re-sizes more-or-less properly?
-    # XXX use _sync_terminal_size
     def forward_winch(sig, frame):
         proto._sync_terminal_size()
-        # print("forward winch")
-        # b = array.array('h', [0, 0, 0, 0])
-        # fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, b, True)
-        # fcntl.ioctl(proc.fd, termios.TIOCSWINSZ, b)
-        # ##proc.signalProcess(signal.SIGWINCH)
     signal.signal(signal.SIGWINCH, forward_winch)
 
     std = StandardIO(WriteTo(proto))
     proto.std = std
+
     await proto.when_done()
 
 
@@ -174,35 +171,53 @@ async def _host(reactor, mailbox, read_only):
     Run the host side interaction, launching a tty-share
     subprocess and basically turning over 'this' terminal to it.
     """
-    print(f"Preparing to share this terminal with a peer")
-    if not read_only:
-        print(f"Remember: they can type any command!")
-        print(f"(So share this code with a person you trust with your keyboard)")
-    print()
-    wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
-    coop = create_coop(reactor, wh)
-    wh.allocate_code()
-    code = await wh.get_code()
-    print(f"magic code: {code}")
 
-    dilated = await coop.dilate()
-    print("host: dilated")
+    from rich.live import Live
+    status = WormholeStatus()
 
-    # XXX need to forward on the "resize" signal to our child, so that
-    # if we're too big etc those messages get through
+    live = Live(
+        get_renderable=lambda: status,
+    )
 
-    # we're running the server -- we want a random port, but also we
-    # _NEED_ to have the same port in use on the far side, for boring
-    # HTTP reasons (the "same origin" check includes the port, so
-    # "localhost:1234" is not the same origin as "localhost:<other port>")
-    random_port = 8001###allocate_tcp_port()
-    # race between here, and when we acutally listen...
-    print("host: fledging")
-    channel = await coop.fledge("tty-share", random_port, random_port)
-    print(f"running tty-share on: {channel.listen_port}")
+    with live:
+        tid0 = status.progress.add_task(f"connecting [b]{mailbox}", total=1)
+        wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
+        coop = create_coop(reactor, wh)
+        wh.allocate_code()
+        code = await wh.get_code()
+        status.progress.update(tid0, completed=True)
+        status.set_code(code)
+        tid1 = status.progress.add_task("waiting for peer...", total=1)
+
+        def on_status(*args, **kw):
+            print("status", args, kw)
+        dilated_d = ensureDeferred(coop.dilate(on_status_update=on_status))
+
+        while not dilated_d.called:
+            d = Deferred()
+            reactor.callLater(.25, lambda: d.callback(None))
+            await d
+
+        dilated = await dilated_d
+        print(f"host: dilated: {dilated}")
+        status.progress.update(tid1, comleted=True)
+
+        # we're running the server -- we want a random port, but also we
+        # _NEED_ to have the same port in use on the far side, for boring
+        # HTTP reasons (the "same origin" check includes the port, so
+        # "localhost:1234" is not the same origin as "localhost:<other port>")
+        random_port = allocate_tcp_port()
+        # race between here, and when we acutally listen...
+        print("host: fledging")
+        if 1:
+            channel = await coop.fledge("tty-share", random_port, random_port)
+            print(f"running tty-share on: {channel.listen_port}")
 
     if 0:
         await Deferred()
     else:
         ro_args = ["-readonly"] if read_only else []
-        await launch_tty_share(reactor, "--listen", f"localhost:{channel.listen_port}", *ro_args)
+        try:
+            await launch_tty_share(reactor, "--listen", f"localhost:{channel.listen_port}", *ro_args)
+        except Exception as e:
+            print(f"Failed to launch tty-share: {e}")
