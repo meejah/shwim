@@ -74,7 +74,7 @@ async def _guest(reactor, mailbox, code):
     channel = await coop.when_roosted("tty-share")
     port = channel.connect_port
 
-    await launch_tty_share(reactor, f"http://127.0.0.1:{port}/s/local/")
+    await launch_tty_share(reactor, f"http://localhost:{port}/s/local/")
 
 
 class TtyShare(Protocol):
@@ -208,7 +208,6 @@ async def _host(reactor, mailbox, read_only):
         # "localhost:1234" is not the same origin as "localhost:<other port>")
         random_port = allocate_tcp_port()
         # race between here, and when we acutally listen...
-        print("host: fledging")
         if 1:
             channel = await coop.fledge("tty-share", random_port, random_port)
             print(f"running tty-share on: {channel.listen_port}")
