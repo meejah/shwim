@@ -9,6 +9,7 @@ import click
 import signal
 import shutil
 import wormhole
+import attrs
 from wormhole.cli import public_relay
 from fowl.api import create_coop
 from fowl._proto import create_fowl
@@ -60,21 +61,31 @@ async def _guest(reactor, mailbox, code):
     """
     Join another person's terminal via tty-share
     """
-    wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
+
+    def otherstatus(st):
+        print("wormhole", st)
+
+    wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True, on_status_update=otherstatus)
     coop = create_coop(reactor, wh)
 
     wh.set_code(code)
     c = await wh.get_code()
 
+    def status(st):
+        print("status", st)
+
     print("Connecting to peer")
-    dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
+    dilated = await coop.dilate(
+        transit_relay_location=public_relay.TRANSIT_RELAY,
+        on_status_update=status,
+    )
     print("...connected, launching tty-share")
 
     x = coop.roost("tty-share")
     channel = await coop.when_roosted("tty-share")
     port = channel.connect_port
 
-    await launch_tty_share(reactor, f"http://localhost:{port}/s/local/")
+    await launch_tty_share(reactor, f"http://127.0.0.1:{port}/s/local/")
 
 
 class TtyShare(Protocol):
@@ -179,9 +190,13 @@ async def _host(reactor, mailbox, read_only):
         get_renderable=lambda: status,
     )
 
+    xxx = open('foo', 'w')
+    def otherstatus(st):
+        print("wormhole", st)
+
     with live:
         tid0 = status.progress.add_task(f"connecting [b]{mailbox}", total=1)
-        wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
+        wh = wormhole.create("meejah.ca/wormhole/forward", mailbox, reactor, dilation=True)
         coop = create_coop(reactor, wh)
         wh.allocate_code()
         code = await wh.get_code()
@@ -189,8 +204,11 @@ async def _host(reactor, mailbox, read_only):
         status.set_code(code)
         tid1 = status.progress.add_task("waiting for peer...", total=1)
 
-        def on_status(*args, **kw):
-            print("status", args, kw)
+        def on_status(st):
+            print("status", st)
+            import json
+            xxx.write("{}\n".format(st))
+            xxx.flush()
         dilated_d = ensureDeferred(coop.dilate(on_status_update=on_status))
 
         while not dilated_d.called:
@@ -206,7 +224,7 @@ async def _host(reactor, mailbox, read_only):
         # _NEED_ to have the same port in use on the far side, for boring
         # HTTP reasons (the "same origin" check includes the port, so
         # "localhost:1234" is not the same origin as "localhost:<other port>")
-        random_port = allocate_tcp_port()
+        random_port = 8000#allocate_tcp_port()
         # race between here, and when we acutally listen...
         if 1:
             channel = await coop.fledge("tty-share", random_port, random_port)
@@ -217,6 +235,6 @@ async def _host(reactor, mailbox, read_only):
     else:
         ro_args = ["-readonly"] if read_only else []
         try:
-            await launch_tty_share(reactor, "--listen", f"localhost:{channel.listen_port}", *ro_args)
+            await launch_tty_share(reactor, "--listen", f"127.0.0.1:{channel.listen_port}", *ro_args)
         except Exception as e:
             print(f"Failed to launch tty-share: {e}")
