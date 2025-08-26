@@ -62,17 +62,13 @@ async def _guest(reactor, mailbox, code):
     Join another person's terminal via tty-share
     """
 
-    def otherstatus(st):
-        print("wormhole", st)
-
-    wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True, on_status_update=otherstatus)
+    def status(st):
+        print("status", st)
+    wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True, on_status_update=status)
     coop = create_coop(reactor, wh)
 
     wh.set_code(code)
     c = await wh.get_code()
-
-    def status(st):
-        print("status", st)
 
     print("Connecting to peer")
     dilated = await coop.dilate(
@@ -82,8 +78,10 @@ async def _guest(reactor, mailbox, code):
     print("...connected, launching tty-share")
 
     x = coop.roost("tty-share")
+    print(f"roosting {x}")
     channel = await coop.when_roosted("tty-share")
     port = channel.connect_port
+    print(f"port {port}")
 
     await launch_tty_share(reactor, f"http://127.0.0.1:{port}/s/local/")
 
