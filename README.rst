@@ -32,6 +32,11 @@ hand your local keyboard over to.
 
 The Host may pass ``--read-only`` to ignore input from the Guest.
 
+.. image:: media/shwim-light-600.png
+    :width: 600px
+    :align: right
+    :alt: The ShWiM terminal UI running, showing a connection to the mailbox server, generated code but no peer yet
+
 
 Slightly Longer Explanation
 ---------------------------
