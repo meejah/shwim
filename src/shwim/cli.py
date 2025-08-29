@@ -11,6 +11,7 @@ import shutil
 import wormhole
 import attrs
 from wormhole.cli import public_relay
+from wormhole._status import ConsumedCode, ConnectedPeer, ReconnectingPeer
 from fowl.api import create_coop
 from fowl._proto import create_fowl
 from fowl.observer import When
@@ -71,19 +72,16 @@ async def _guest(reactor, mailbox, code):
     c = await wh.get_code()
 
     print("Connecting to peer")
-    dilated = await coop.dilate(
-        transit_relay_location=public_relay.TRANSIT_RELAY,
-        on_status_update=status,
-    )
-    print("...connected, launching tty-share")
+    dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
 
     x = coop.roost("tty-share")
     print(f"roosting {x}")
     channel = await coop.when_roosted("tty-share")
     port = channel.connect_port
-    print(f"port {port}")
+    url = f"http://localhost:{port}/s/local/"
 
-    await launch_tty_share(reactor, f"http://127.0.0.1:{port}/s/local/")
+    print(f"...connected, launching tty-share: {url}")
+    await launch_tty_share(reactor, url)
 
 
 class TtyShare(Protocol):
@@ -188,16 +186,29 @@ async def _host(reactor, mailbox, read_only):
         get_renderable=lambda: status,
         # we can set screen=True here but I kind of prefer seeing the
         # "leftover" status information above?
+        #screen=True,
     )
 
+    winning_hint = None
+
+    def on_status(ds):
+        # print(ds)
+        nonlocal winning_hint
+        if isinstance(ds.mailbox.code, ConsumedCode):
+            status.set_code("<consumed>")
+        if isinstance(ds.peer_connection, ConnectedPeer):
+            winning_hint = ds.peer_connection.hint_description
+        elif isinstance(ds.peer_connection, ReconnectingPeer):
+            print("Disconnected?")
+            winning_hint = None
+
     with live:
-        tid0 = status.progress.add_task(f"connecting [b]{mailbox}", total=1)
-        wh = wormhole.create("meejah.ca/wormhole/forward", mailbox, reactor, dilation=True)
+        tid0 = status.progress.add_task(f"Connecting [b]{mailbox}", total=1)
+        wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)
         coop = create_coop(reactor, wh)
         wh.allocate_code()
         code = await wh.get_code()
-        print(f"code: {code}")
-        status.progress.update(tid0, completed=True)
+        status.progress.update(tid0, completed=True, description=f"Connected [b]{mailbox}")
         status.set_code(code)
         tid1 = status.progress.add_task("waiting for peer...", total=5)
 
@@ -213,6 +224,11 @@ async def _host(reactor, mailbox, read_only):
         dilated = await dilated_d
         print(f"host: dilated.")
         status.progress.update(tid1, completed=5)
+        status.progress.update(
+            tid1,
+            completed=True,
+            description=f"Peer connected: {winning_hint}",
+        )
 
         # we're running the server -- we want a random port, but also we
         # _NEED_ to have the same port in use on the far side, for boring
@@ -225,7 +241,27 @@ async def _host(reactor, mailbox, read_only):
 
     ## actually run tty-share (we've gotten rid of the status display now)
     ro_args = ["-readonly"] if read_only else []
-    try:
-        await launch_tty_share(reactor, "--listen", f"127.0.0.1:{channel.listen_port}", *ro_args)
-    except Exception as e:
-        print(f"Failed to launch tty-share: {e}")
+
+    tty_done = ensureDeferred(
+        launch_tty_share(
+            reactor,
+            "--listen", f"localhost:{channel.listen_port}",
+            *ro_args,
+        )
+    )
+    while not tty_done.called:
+        await deferLater(reactor, 0.25, lambda: None)
+        if winning_hint is None:
+            print("Peer disconnected")
+            status.progress.remove_task(tid1)
+            tid2 = status.progress.add_task("Reconnecting to Peer...", total=1)
+            with live:
+                while winning_hint is None:
+                    await deferLater(reactor, 0.25, lambda: None)
+            status.progress.update(
+                tid2,
+                completed=True,
+                description=f"Peer connected: {winning_hint}",
+            )
+
+    await tty_done

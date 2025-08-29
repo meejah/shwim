@@ -4,7 +4,7 @@ from rich.live import Live
 from rich.console import Console
 from rich.layout import Layout, Align
 from rich.padding import Padding
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TaskProgressColumn
 
 
 class WormholeStatus:
@@ -18,6 +18,8 @@ class WormholeStatus:
         self.progress = Progress(
             SpinnerColumn(spinner_name="circleHalves", finished_text="✅", speed=1),
             "{task.description}",
+            ##BarColumn(),
+            refresh_per_second=4.0,
         )
         pane = Panel(txt, title="ShWiM", title_align="left", width=50)
         console = Console()
@@ -41,7 +43,8 @@ class WormholeStatus:
         )
 
     def set_code(self, code):
-        self.magic_code.append(code, style="bold")
+        #self.magic_code.append(code, style="bold")
+        self.magic_code.plain = code#append(code, style="bold")
 
     def __rich__(self):
         return self.layout
