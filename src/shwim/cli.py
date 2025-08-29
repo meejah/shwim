@@ -84,8 +84,7 @@ async def _guest(reactor, mailbox, code):
             # race (there's a delay from when you run "tty-share ..."
             # to when it's actually listening)
             await deferLater(reactor, 1.0, lambda: None)
-            proto = TtyShare(reactor)
-            await launch_tty_share(proto, reactor, url)
+            await launch_tty_share(reactor, url)
             break
         except Exception as e:
             print(f"Failed to launch: {e}")
@@ -251,10 +250,8 @@ async def _host(reactor, mailbox, read_only):
     ## actually run tty-share (we've gotten rid of the status display now)
     ro_args = ["-readonly"] if read_only else []
 
-    tty_proto = TtyShare(reactor)
     tty_done = ensureDeferred(
-        launch_tty_share(
-            tty_proto,
+        launch_ttyshare(
             reactor,
             "--listen", f"localhost:{channel.listen_port}",
             *ro_args,
