@@ -63,9 +63,7 @@ async def _guest(reactor, mailbox, code):
     Join another person's terminal via tty-share
     """
 
-    def status(st):
-        print("status", st)
-    wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True, on_status_update=status)
+    wh = wormhole.create("meejah.ca/shwim", mailbox, reactor, dilation=True)  #, on_status_update=print)
     coop = create_coop(reactor, wh)
 
     wh.set_code(code)
@@ -74,22 +72,27 @@ async def _guest(reactor, mailbox, code):
     print("Connecting to peer")
     dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
 
-    x = coop.roost("tty-share")
-    print(f"roosting {x}")
+    coop.roost("tty-share", serverFromString(reactor, "tcp:8001:interface=localhost"))
     channel = await coop.when_roosted("tty-share")
     port = channel.connect_port
     url = f"http://localhost:{port}/s/local/"
 
     print(f"...connected, launching tty-share: {url}")
-    await deferLater(reactor, 0.5, lambda: None)
-    for remaining in range(5, 0, -1):
+    for remaining in range(3, 0, -1):
         try:
-            await launch_tty_share(reactor, url)
+            # an up-front delay helps the server tty-share win the
+            # race (there's a delay from when you run "tty-share ..."
+            # to when it's actually listening)
+            await deferLater(reactor, 1.0, lambda: None)
+            proto = TtyShare(reactor)
+            await launch_tty_share(proto, reactor, url)
             break
         except Exception as e:
             print(f"Failed to launch: {e}")
-            await deferLater(reactor, 1.0, lambda: None)
-            print(f"will try {remaining} more times")
+            if "process ended by signal" in str(e):
+                print("Stopping")
+                break
+            print(f"will try {remaining - 1} more times")
     if 0:
         print(f"tty-share gone, maintaining wormhole")
         await Deferred()
@@ -203,10 +206,9 @@ async def _host(reactor, mailbox, read_only):
     winning_hint = None
 
     def on_status(ds):
-        # print(ds)
         nonlocal winning_hint
         if isinstance(ds.mailbox.code, ConsumedCode):
-            status.set_code("<consumed>")
+            status.set_code("<code consumed>")
         if isinstance(ds.peer_connection, ConnectedPeer):
             winning_hint = ds.peer_connection.hint_description
         elif isinstance(ds.peer_connection, ReconnectingPeer):
@@ -251,26 +253,23 @@ async def _host(reactor, mailbox, read_only):
     ## actually run tty-share (we've gotten rid of the status display now)
     ro_args = ["-readonly"] if read_only else []
 
+    tty_proto = TtyShare(reactor)
     tty_done = ensureDeferred(
         launch_tty_share(
+            tty_proto,
             reactor,
             "--listen", f"localhost:{channel.listen_port}",
             *ro_args,
         )
     )
+    # try to get a message to the user when we're re-connecting
     while not tty_done.called:
         await deferLater(reactor, 0.25, lambda: None)
-        if winning_hint is None:
-            print("Peer disconnected")
-            status.progress.remove_task(tid1)
-            tid2 = status.progress.add_task("Reconnecting to Peer...", total=1)
-            with live:
-                while winning_hint is None:
-                    await deferLater(reactor, 0.25, lambda: None)
-            status.progress.update(
-                tid2,
-                completed=True,
-                description=f"Peer connected: {winning_hint}",
-            )
+        if winning_hint is None and not tty_done.called:
+            print("\nPeer disconnected\nReconnecting...")
+
+            while winning_hint is None:
+                await deferLater(reactor, 0.25, lambda: None)
+            print(f"Connected via {winning_hint}\n")
 
     await tty_done
