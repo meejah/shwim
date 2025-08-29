@@ -227,7 +227,7 @@ async def _host(reactor, mailbox, read_only):
             await d
 
         await dilated_d
-        print("host: dilated.")
+        # print("host: dilated.")
         status.progress.update(tid1, completed=5)
         status.progress.update(
             tid1,
@@ -238,7 +238,7 @@ async def _host(reactor, mailbox, read_only):
         # could allocate_tcp_port() and pass it twice here to have
         # both sides use the same port
         channel = await coop.fledge("tty-share")
-        print(f"running tty-share on: {channel.listen_port}")
+        print(f"running tty-share on localhost:{channel.listen_port}")
 
     ## actually run tty-share (we've gotten rid of the status display now)
     ro_args = ["-readonly"] if read_only else []

@@ -4,17 +4,19 @@ from rich.progress import Progress, SpinnerColumn
 
 class WormholeStatus:
 
-    def __init__(self):
+    def __init__(self, read_only=False):
         txt = Text(
             "Instant terminal sharing via Magic Wormhole\n"
             "Once connected, we launch "
         )
-        txt.append(Text("tty-share", style="bold"))
+        txt.append(Text("tty-share", style="bold green"))
+        if not read_only:
+            txt.append("\nNote: --read-only was not specified!")
         self.progress = Progress(
             SpinnerColumn(spinner_name="circleHalves", finished_text="✅", speed=1),
             "{task.description}",
             ##BarColumn(),
-            refresh_per_second=4.0,
+            refresh_per_second=1.0,
         )
 
         from rich.table import Table
