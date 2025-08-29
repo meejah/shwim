@@ -81,7 +81,18 @@ async def _guest(reactor, mailbox, code):
     url = f"http://localhost:{port}/s/local/"
 
     print(f"...connected, launching tty-share: {url}")
-    await launch_tty_share(reactor, url)
+    await deferLater(reactor, 0.5, lambda: None)
+    for remaining in range(5, 0, -1):
+        try:
+            await launch_tty_share(reactor, url)
+            break
+        except Exception as e:
+            print(f"Failed to launch: {e}")
+            await deferLater(reactor, 1.0, lambda: None)
+            print(f"will try {remaining} more times")
+    if 0:
+        print(f"tty-share gone, maintaining wormhole")
+        await Deferred()
 
 
 class TtyShare(Protocol):
@@ -210,10 +221,8 @@ async def _host(reactor, mailbox, read_only):
         code = await wh.get_code()
         status.progress.update(tid0, completed=True, description=f"Connected [b]{mailbox}")
         status.set_code(code)
-        tid1 = status.progress.add_task("waiting for peer...", total=5)
+        tid1 = status.progress.add_task("waiting for peer to use above Magic Code...", total=5)
 
-        def on_status(st):
-            status.progress.update(tid1, advance=1)
         dilated_d = ensureDeferred(coop.dilate(on_status_update=on_status))
 
         while not dilated_d.called:
