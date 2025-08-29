@@ -72,7 +72,7 @@ async def _guest(reactor, mailbox, code):
     print("Connecting to peer")
     dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
 
-    coop.roost("tty-share", serverFromString(reactor, "tcp:8001:interface=localhost"))
+    coop.roost("tty-share")
     channel = await coop.when_roosted("tty-share")
     port = channel.connect_port
     url = f"http://localhost:{port}/s/local/"
@@ -243,13 +243,9 @@ async def _host(reactor, mailbox, read_only):
             description=f"Peer connected: {winning_hint}",
         )
 
-        # we're running the server -- we want a random port, but also we
-        # _NEED_ to have the same port in use on the far side, for boring
-        # HTTP reasons (the "same origin" check includes the port, so
-        # "localhost:1234" is not the same origin as "localhost:<other port>")
-        random_port = allocate_tcp_port()
-        # race between here, and when we acutally listen...
-        channel = await coop.fledge("tty-share", random_port, random_port)
+        # could allocate_tcp_port() and pass it twice here to have
+        # both sides use the same port
+        channel = await coop.fledge("tty-share")
         print(f"running tty-share on: {channel.listen_port}")
 
     ## actually run tty-share (we've gotten rid of the status display now)
