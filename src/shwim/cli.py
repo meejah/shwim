@@ -40,6 +40,13 @@ def shwim(code, mailbox, read_only):
     This uses the great tty-share under the hood, except that it never
     uses tty-share's public server -- all communications are
     end-to-end encrypted over Magic Wormhole.
+
+    With no arguments, you are the 'host' peer and will be sharing
+    your terminal. When you pass a Magic Code (gotten from someone
+    running as 'host') you are the 'guest' user.
+
+    Note that the 'guest' user can type and run commands but the host
+    can use --read-only if they don't want this.
     """
     if code is None:
         react(
