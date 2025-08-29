@@ -22,7 +22,7 @@ class WormholeStatus:
         t.add_column(justify="right", width=11)
         t.add_column(justify="left")
 
-        self.magic_code = Text("", style="green on black", justify="center")
+        self.magic_code = Text("<creating code>", style="green on black", justify="center")
         self.progress
 
         t.add_row(Text("ShWiM", style="bold green"), txt)
