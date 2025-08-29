@@ -183,8 +183,10 @@ async def launch_tty_share(reactor, *args):
 
     std = StandardIO(WriteTo(proto))
     proto.std = std
-
-    await proto.when_done()
+    try:
+        await proto.when_done()
+    finally:
+        std.loseConnection()
 
 
 async def _host(reactor, mailbox, read_only):
