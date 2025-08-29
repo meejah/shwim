@@ -213,7 +213,6 @@ async def _host(reactor, mailbox, read_only):
         if isinstance(ds.peer_connection, ConnectedPeer):
             winning_hint = ds.peer_connection.hint_description
         elif isinstance(ds.peer_connection, ReconnectingPeer):
-            print("Disconnected?")
             winning_hint = None
 
     with live:
@@ -251,7 +250,7 @@ async def _host(reactor, mailbox, read_only):
     ro_args = ["-readonly"] if read_only else []
 
     tty_done = ensureDeferred(
-        launch_ttyshare(
+        launch_tty_share(
             reactor,
             "--listen", f"localhost:{channel.listen_port}",
             *ro_args,
