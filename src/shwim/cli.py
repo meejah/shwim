@@ -186,11 +186,9 @@ async def _host(reactor, mailbox, read_only):
 
     live = Live(
         get_renderable=lambda: status,
+        # we can set screen=True here but I kind of prefer seeing the
+        # "leftover" status information above?
     )
-
-    xxx = open('foo', 'w')
-    def otherstatus(st):
-        print("wormhole", st)
 
     with live:
         tid0 = status.progress.add_task(f"connecting [b]{mailbox}", total=1)
@@ -198,15 +196,13 @@ async def _host(reactor, mailbox, read_only):
         coop = create_coop(reactor, wh)
         wh.allocate_code()
         code = await wh.get_code()
+        print(f"code: {code}")
         status.progress.update(tid0, completed=True)
         status.set_code(code)
-        tid1 = status.progress.add_task("waiting for peer...", total=1)
+        tid1 = status.progress.add_task("waiting for peer...", total=5)
 
         def on_status(st):
-            print("status", st)
-            import json
-            xxx.write("{}\n".format(st))
-            xxx.flush()
+            status.progress.update(tid1, advance=1)
         dilated_d = ensureDeferred(coop.dilate(on_status_update=on_status))
 
         while not dilated_d.called:
@@ -215,24 +211,21 @@ async def _host(reactor, mailbox, read_only):
             await d
 
         dilated = await dilated_d
-        print(f"host: dilated: {dilated}")
-        status.progress.update(tid1, comleted=True)
+        print(f"host: dilated.")
+        status.progress.update(tid1, completed=5)
 
         # we're running the server -- we want a random port, but also we
         # _NEED_ to have the same port in use on the far side, for boring
         # HTTP reasons (the "same origin" check includes the port, so
         # "localhost:1234" is not the same origin as "localhost:<other port>")
-        random_port = 8000#allocate_tcp_port()
+        random_port = allocate_tcp_port()
         # race between here, and when we acutally listen...
-        if 1:
-            channel = await coop.fledge("tty-share", random_port, random_port)
-            print(f"running tty-share on: {channel.listen_port}")
+        channel = await coop.fledge("tty-share", random_port, random_port)
+        print(f"running tty-share on: {channel.listen_port}")
 
-    if 0:
-        await Deferred()
-    else:
-        ro_args = ["-readonly"] if read_only else []
-        try:
-            await launch_tty_share(reactor, "--listen", f"127.0.0.1:{channel.listen_port}", *ro_args)
-        except Exception as e:
-            print(f"Failed to launch tty-share: {e}")
+    ## actually run tty-share (we've gotten rid of the status display now)
+    ro_args = ["-readonly"] if read_only else []
+    try:
+        await launch_tty_share(reactor, "--listen", f"127.0.0.1:{channel.listen_port}", *ro_args)
+    except Exception as e:
+        print(f"Failed to launch tty-share: {e}")
