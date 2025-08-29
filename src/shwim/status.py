@@ -14,7 +14,7 @@ class WormholeStatus:
             "Instant terminal sharing via Magic Wormhole\n"
             "Once connected, we launch "
         )
-        txt.append(Text("tty-share\n", style="bold"))
+        txt.append(Text("tty-share", style="bold"))
         self.progress = Progress(
             SpinnerColumn(spinner_name="circleHalves", finished_text="✅", speed=1),
             "{task.description}",
@@ -23,28 +23,21 @@ class WormholeStatus:
         )
         pane = Panel(txt, title="ShWiM", title_align="left", width=50)
         console = Console()
-        # okay we're like not "absolute position" this yet
-        self.layout = Layout()
-        self.magic_code = Text("")
-        self.layout.split_column(
-            Layout(
-                Align.center(Padding(pane, 2)),
-            ),
-            Layout(
-                Align.center(
-                    Panel(Align.center(Padding(self.magic_code, 1)), title="Magic Code", title_align="left", width=50),
-                ),
-            ),
-            Layout(
-                Align.center(
-                    Panel(self.progress, title="Connecting", title_align="left", height=5),
-                ),
-            ),
-        )
+
+        from rich.table import Table
+        t = self.layout = Table(show_header=False, show_lines=False, show_edge=True, padding=(0,1,1,1))
+        t.add_column(justify="right", width=11)
+        t.add_column(justify="left")
+
+        self.magic_code = Text("", style="green on black", justify="center")
+        self.progress
+
+        t.add_row(Text("ShWiM", style="bold green"), txt)
+        t.add_row(Text("Magic Code", style="bold red"), self.magic_code)
+        t.add_row(Text("Status"), self.progress)
 
     def set_code(self, code):
-        #self.magic_code.append(code, style="bold")
-        self.magic_code.plain = code#append(code, style="bold")
+        self.magic_code.plain = code
 
     def __rich__(self):
         return self.layout
