@@ -1,10 +1,5 @@
-from rich.panel import Panel
 from rich.text import Text
-from rich.live import Live
-from rich.console import Console
-from rich.layout import Layout, Align
-from rich.padding import Padding
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TaskProgressColumn
+from rich.progress import Progress, SpinnerColumn
 
 
 class WormholeStatus:
@@ -21,8 +16,6 @@ class WormholeStatus:
             ##BarColumn(),
             refresh_per_second=4.0,
         )
-        pane = Panel(txt, title="ShWiM", title_align="left", width=50)
-        console = Console()
 
         from rich.table import Table
         t = self.layout = Table(show_header=False, show_lines=False, show_edge=True, padding=(0,1,1,1))

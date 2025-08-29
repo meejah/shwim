@@ -1,21 +1,14 @@
 import os
-import sys
 import tty
-import pty
-import fcntl
-import array
 import termios
 import click
 import signal
 import shutil
 import wormhole
-import attrs
 from wormhole.cli import public_relay
 from wormhole._status import ConsumedCode, ConnectedPeer, ReconnectingPeer
 from fowl.api import create_coop
-from fowl._proto import create_fowl
 from fowl.observer import When
-from fowl.tcp import allocate_tcp_port
 from twisted.internet.defer import ensureDeferred, Deferred
 from twisted.internet.task import react, deferLater
 from twisted.internet.protocol import Protocol
@@ -67,10 +60,10 @@ async def _guest(reactor, mailbox, code):
     coop = create_coop(reactor, wh)
 
     wh.set_code(code)
-    c = await wh.get_code()
+    await wh.get_code()
 
     print("Connecting to peer")
-    dilated = await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
+    await coop.dilate(transit_relay_location=public_relay.TRANSIT_RELAY)
 
     coop.roost("tty-share")
     channel = await coop.when_roosted("tty-share")
@@ -93,7 +86,7 @@ async def _guest(reactor, mailbox, code):
                 break
             print(f"will try {remaining - 1} more times")
     if 0:
-        print(f"tty-share gone, maintaining wormhole")
+        print("tty-share gone, maintaining wormhole")
         await Deferred()
 
 
@@ -166,7 +159,8 @@ async def launch_tty_share(reactor, *args):
     """
     proto = TtyShare(reactor)
     # print(f"RUN: {args}")
-    proc = reactor.spawnProcess(
+    # this returns "process" object; can we use it / 'return' it somehow?
+    reactor.spawnProcess(
         proto,
         shutil.which("tty-share"),
         args=('tty-share',) + args,
@@ -232,8 +226,8 @@ async def _host(reactor, mailbox, read_only):
             reactor.callLater(.25, lambda: d.callback(None))
             await d
 
-        dilated = await dilated_d
-        print(f"host: dilated.")
+        await dilated_d
+        print("host: dilated.")
         status.progress.update(tid1, completed=5)
         status.progress.update(
             tid1,
